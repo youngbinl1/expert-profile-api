@@ -1,0 +1,7 @@
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2.6
+anthropic>=0.40.0
+boto3>=1.34
+pycountry>=23.12.11
+tzdata>=2024.1
