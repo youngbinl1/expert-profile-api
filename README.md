@@ -1,5 +1,7 @@
 # Expert Profile API
 
+[![ci-cd](https://github.com/youngbinl1/expert-profile-api/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/youngbinl1/expert-profile-api/actions/workflows/ci-cd.yml)
+
 A small FastAPI service that turns raw career text and screening questions (VQs) into a formatted,
 email-ready expert profile. It parses semi-structured career data, normalises locations to countries,
 converts interview availability from any time zone to Korea Standard Time (daylight-saving aware), and

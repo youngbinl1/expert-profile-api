@@ -3,6 +3,9 @@
 #
 #   export GITHUB_REPO="your-github-user/expert-profile-api"
 #   export ANTHROPIC_API_KEY="sk-ant-..."     # optional - without it the service runs in template mode
+#   export GITHUB_SUB="repo:..."              # optional - only if GitHub issues tokens with a different 'sub'
+#                                             # (new repositories use IDs, e.g. repo:user@123/repo@456:ref:refs/heads/main;
+#                                             #  see GUIDE_KR.md "Could not assume role")
 #   bash infra/setup.sh
 #
 # Safe to re-run: every step checks whether the resource already exists.
@@ -82,11 +85,12 @@ if ! aws iam get-open-id-connect-provider --open-id-connect-provider-arn "$OIDC_
     --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1 1c58a3a8518e8759bf075b76b750d4f2df264fcd >/dev/null
 fi
 DEPLOY_ROLE="${APP}-github-deploy"
+SUB="${GITHUB_SUB:-repo:${GITHUB_REPO}:ref:refs/heads/main}"
 TRUST="{
   \"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",
   \"Principal\":{\"Federated\":\"${OIDC_ARN}\"},\"Action\":\"sts:AssumeRoleWithWebIdentity\",
   \"Condition\":{\"StringEquals\":{\"token.actions.githubusercontent.com:aud\":\"sts.amazonaws.com\"},
-  \"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"repo:${GITHUB_REPO}:ref:refs/heads/main\"}}}]}"
+  \"StringLike\":{\"token.actions.githubusercontent.com:sub\":\"${SUB}\"}}}]}"
 if aws iam get-role --role-name "$DEPLOY_ROLE" >/dev/null 2>&1; then
   aws iam update-assume-role-policy --role-name "$DEPLOY_ROLE" --policy-document "$TRUST"
 else

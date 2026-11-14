@@ -181,7 +181,7 @@ bash infra/teardown.sh
 | `503 Server is not configured` | 서버에 `APP_API_KEY`가 없어요. 로컬은 `export APP_API_KEY=dev-key`를 하고 서버를 다시 켜세요 |
 | `setup.sh`가 `Set GITHUB_REPO first`라고 함 | `export GITHUB_REPO="USER/expert-profile-api"`를 먼저 실행하세요 |
 | Actions의 `build-and-push`가 계속 skipped | 7번의 변수 `AWS_ROLE_ARN`을 추가했는지 확인하세요(오타 주의) |
-| Actions에서 `Could not assume role` 같은 오류 | GITHUB_REPO 오타이거나 `main` 브랜치가 아니에요. `GITHUB_REPO`를 바로잡고 `bash infra/setup.sh`를 다시 실행하세요(다시 실행해도 안전해요) |
+| Actions에서 `Could not assume role` 같은 오류 | ① `GITHUB_REPO` 오타, `main` 브랜치가 아님 → 바로잡고 `bash infra/setup.sh` 재실행(안전). ② 이름이 맞는데도 실패하면 GitHub가 보내는 `sub` 값이 다른 형식일 수 있어요(새 저장소는 `repo:아이디@숫자/저장소@숫자:ref:refs/heads/main`처럼 ID가 들어감). 워크플로에 `sub`를 출력하는 디버그 단계를 넣어 실제 값을 확인한 뒤, `export GITHUB_SUB="그 값"`을 설정하고 `bash infra/setup.sh`를 다시 실행하세요 |
 | `create-service.sh`가 `No ':latest' image` | 7번이 끝나지 않았어요. Actions가 초록색인지, ECR에 이미지가 있는지 확인하세요 |
 | 서비스가 `CREATE_FAILED` | App Runner 콘솔 > Logs에서 이유를 보세요. 이미지가 없거나 역할 권한이 아직 전파되지 않은 경우가 많아요. `teardown.sh`는 하지 말고 서비스만 콘솔에서 삭제한 뒤 1~2분 후 `create-service.sh`를 다시 실행하세요 |
 | `/health`의 `storage`가 `memory` | 환경 변수 `DDB_TABLE`이 안 들어갔어요. create-service.sh로 만든 서비스인지 확인하세요 |
@@ -208,3 +208,26 @@ bash infra/teardown.sh
 * **보안은 어떻게 했나요?** AWS 키를 GitHub에 저장하지 않고 OIDC로 단기 자격증명을 쓰고, 역할을 이미지 pull / 서비스 실행 / CI로 나눠 최소 권한을 부여했어요. API 키는 Secrets Manager에서 주입해요.
 * **LLM이 실패하면요?** 템플릿 코멘트와 ISO 형식 파서로 대체해서 서비스가 멈추지 않아요.
 * **한계는요?** DynamoDB Scan 사용, 단일 공유 API 키, WAF/레이트 리밋 없음. 개선안은 GSI, 사용자별 키, WAF, Terraform이에요.
+
+## 부록. GitHub가 보내는 `sub` 값 직접 확인하기 (디버그)
+
+`Could not assume role` 오류가 이름이 맞는데도 나올 때만 쓰세요. `.github/workflows/ci-cd.yml`의 `build-and-push` 작업에서
+`actions/checkout` 단계 바로 아래에 아래 단계를 임시로 넣고 push하면, 로그에 실제 `sub` 값이 찍혀요. 확인이 끝나면 지우세요.
+
+```yaml
+      - name: Print OIDC claims (debug)
+        continue-on-error: true
+        run: |
+          RESP=$(curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com")
+          echo "$RESP" | python3 -c "
+          import sys, json, base64
+          t = json.load(sys.stdin)['value'].split('.')[1]
+          t += '=' * (-len(t) % 4)
+          d = json.loads(base64.urlsafe_b64decode(t))
+          print({k: d.get(k) for k in ['sub', 'aud', 'repository', 'ref']})
+          "
+```
+
+예를 들어 `repo:아이디@104573477/expert-profile-api@1457614909:ref:refs/heads/main`처럼 숫자가 붙어 있으면,
+`export GITHUB_SUB="그 값"`을 설정한 뒤 `bash infra/setup.sh`를 다시 실행하세요.
