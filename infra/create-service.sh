@@ -24,6 +24,9 @@ ensure_role() {  # role-name principal
   aws iam get-role --role-name "$1" >/dev/null 2>&1 || aws iam create-role --role-name "$1" --assume-role-policy-document "$(trust "$2")" >/dev/null
 }
 
+echo "== ECS service-linked role (new accounts don't have it yet) =="
+aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com >/dev/null 2>&1 || true
+
 echo "== IAM roles =="
 ensure_role "$EXEC_ROLE" ecs-tasks.amazonaws.com
 aws iam attach-role-policy --role-name "$EXEC_ROLE" --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy

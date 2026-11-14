@@ -78,6 +78,31 @@ docker build -t expert-profile-api .
 docker run --rm -p 8000:8000 -e APP_API_KEY=dev-key expert-profile-api
 ```
 
+## Demo (deployed on AWS, Tokyo region)
+
+The stack below was deployed with the scripts in `infra/` and removed afterwards to avoid ongoing cost.
+All input is synthetic demo data. The demo ran without an LLM key, so the comment line is the template fallback.
+
+**Web UI: standard and clearance styles** (DST-aware availability converted to KST)
+
+![UI, standard style](docs/ui-standard.png)
+![UI, clearance style](docs/ui-clearance.png)
+
+**Health check** reports DynamoDB as the active storage backend
+
+![Health check](docs/health.png)
+
+**CI/CD**: GitHub Actions runs the tests, then builds the image and pushes it to ECR through OIDC (no stored AWS keys)
+
+![GitHub Actions run](docs/github-actions.png)
+
+**AWS resources**: ECS Express Mode service (Fargate), ECR images, DynamoDB history table with TTL, CloudWatch logs
+
+![ECS cluster](docs/ecs-cluster.png)
+![ECR images](docs/ecr-images.png)
+![DynamoDB items](docs/dynamodb.png)
+![CloudWatch logs (request and `profile created` events)](docs/cloudwatch.png)
+
 ## Deploy to AWS
 
 Step-by-step instructions are in [`GUIDE_KR.md`](GUIDE_KR.md) (Korean). In short:
