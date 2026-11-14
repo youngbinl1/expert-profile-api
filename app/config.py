@@ -20,7 +20,7 @@ def get_settings() -> Settings:
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY", ""),
         llm_model=os.getenv("LLM_MODEL", "claude-haiku-4-5"),
         ddb_table=os.getenv("DDB_TABLE", ""),
-        region=os.getenv("APP_REGION", "ap-northeast-2"),
+        region=os.getenv("APP_REGION", "ap-northeast-1"),
         history_ttl_days=int(os.getenv("HISTORY_TTL_DAYS", "30")),
         auth_disabled=os.getenv("AUTH_DISABLED", "").lower() == "true",
     )

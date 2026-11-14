@@ -11,7 +11,7 @@
 # Safe to re-run: every step checks whether the resource already exists.
 set -euo pipefail
 
-REGION="${APP_REGION:-ap-northeast-2}"
+REGION="${APP_REGION:-ap-northeast-1}"
 APP="expert-profile-api"
 TABLE="${APP}-history"
 : "${GITHUB_REPO:?Set GITHUB_REPO first, e.g. export GITHUB_REPO=your-user/expert-profile-api}"

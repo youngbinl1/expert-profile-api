@@ -14,7 +14,7 @@ uses an LLM (Anthropic Claude) to draft a short career comment. It runs locally,
 
 ```mermaid
 flowchart LR
-  U[Browser UI / API client] -->|HTTPS + X-API-Key| AR[AWS App Runner<br/>FastAPI container]
+  U[Browser UI / API client] -->|HTTPS + X-API-Key| AR[Amazon ECS Express Mode<br/>FastAPI container on Fargate + ALB]
   AR -->|history| DDB[(DynamoDB<br/>TTL 30 days)]
   AR -->|read secrets| SM[Secrets Manager]
   AR -->|comment + availability parsing| LLM[Anthropic API]
@@ -26,12 +26,12 @@ flowchart LR
 
 | Concern | Choice |
 |---|---|
-| Compute | AWS App Runner (container from ECR, auto-deploy on new image) |
+| Compute | Amazon ECS Express Mode (Fargate container from ECR, managed ALB + HTTPS URL) |
 | Database | DynamoDB on-demand, items expire automatically via TTL |
 | Secrets | AWS Secrets Manager (injected as environment variables) |
 | CI/CD | GitHub Actions: pytest, then docker build + push to ECR |
 | Auth to AWS | GitHub OIDC federation (short-lived credentials, no access keys in GitHub) |
-| Observability | JSON logs to CloudWatch, `/health` endpoint used by App Runner health checks |
+| Observability | JSON logs to CloudWatch, `/health` endpoint used by the load balancer health checks |
 | IAM | Separate least-privilege roles for image pull, the running service, and CI |
 
 ## API
@@ -86,7 +86,7 @@ Step-by-step instructions are in [`GUIDE_KR.md`](GUIDE_KR.md) (Korean). In short
 export GITHUB_REPO="<user>/expert-profile-api"
 bash infra/setup.sh            # DynamoDB, ECR, Secrets Manager, IAM roles, GitHub OIDC
 git push origin main           # Actions: test -> build -> push image to ECR
-bash infra/create-service.sh   # App Runner service (auto-deploys on every new image)
+bash infra/create-service.sh   # ECS Express Mode service (Fargate + ALB)
 bash infra/teardown.sh         # remove everything when finished
 ```
 
